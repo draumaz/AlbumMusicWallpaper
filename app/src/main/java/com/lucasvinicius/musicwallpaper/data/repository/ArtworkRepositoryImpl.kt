@@ -15,7 +15,7 @@ class ArtworkRepositoryImpl(
     private fun cleanText(text: String): String {
         return text.replace("🅴", "")
             .replace(Regex("(?i)\\s*\\(Explicit\\)"), "")
-            .replace(Regex("(?i)\\s*\\[Explicit\\]"), "")
+            .replace(Regex("(?i)\\s*\\[Explicit]"), "")
             .replace(Regex("(?i)\\s*-\\s*EP$"), "")
             .replace(Regex("(?i)\\s*-\\s*Single$"), "")
             .replace(Regex("(?i)\\s*\\(feat\\..*?\\)"), "")
@@ -81,15 +81,18 @@ class ArtworkRepositoryImpl(
 
             if (response.isSuccessful) {
                 val body = response.body()
-                val url = body?.url
 
-                if (!url.isNullOrBlank()) {
+                // A MÁGICA ACONTECE AQUI:
+                // Tenta pegar a versão 'tall' (retangular) primeiro. Se não existir, pega a 'url' padrão.
+                val bestUrl = body?.url_tall?.takeIf { it.isNotBlank() } ?: body?.url
+
+                if (!bestUrl.isNullOrBlank()) {
                     LookupResult.Success(
                         ArtworkResult(
-                            hlsUrl = url,
-                            artist = body.artist ?: artist,
-                            album = body.album ?: album,
-                            isCached = body.isCached ?: false
+                            hlsUrl = bestUrl,
+                            artist = body?.artist ?: artist,
+                            album = body?.album ?: album,
+                            isCached = body?.isCached ?: false
                         )
                     )
                 } else LookupResult.NotFound

@@ -19,9 +19,10 @@ class NotificationMediaParser(private val context: Context) {
         var title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim().orEmpty()
         var artist = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.trim().orEmpty()
         var album = extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString()?.trim().orEmpty().ifBlank { null }
+
+        // Agora a extração não causa mais crashes de ClassCastException!
         var bitmap = extractBitmapFromExtras(extras)
 
-        // Agora assumimos que está pausado até provar o contrário
         var isPlaying = false
 
         try {
@@ -37,19 +38,21 @@ class NotificationMediaParser(private val context: Context) {
                 val metadata = mediaController.metadata
                 val playbackState = mediaController.playbackState
 
-                // LÊ O ESTADO DE REPRODUÇÃO!
                 if (playbackState != null) {
                     isPlaying = (playbackState.state == PlaybackState.STATE_PLAYING || playbackState.state == PlaybackState.STATE_BUFFERING)
                 }
 
                 if (metadata != null) {
                     if (album == null) album = metadata.getString(MediaMetadata.METADATA_KEY_ALBUM)?.trim()?.ifBlank { null }
+                    // Se a notificação mandou um Icon estranho, nós pegamos o Bitmap verdadeiro e limpo daqui:
                     if (bitmap == null) bitmap = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART) ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
                     if (title.isBlank()) title = metadata.getString(MediaMetadata.METADATA_KEY_TITLE)?.trim().orEmpty()
                     if (artist.isBlank()) artist = metadata.getString(MediaMetadata.METADATA_KEY_ARTIST)?.trim().orEmpty()
                 }
             }
-        } catch (e: Exception) {}
+        } catch (_: Exception) {
+            // Ignoramos silenciosamente se o MediaController falhar
+        }
 
         if (title.isBlank() || artist.isBlank()) return null
 
@@ -58,17 +61,24 @@ class NotificationMediaParser(private val context: Context) {
             artist = artist,
             album = album,
             packageName = packageName,
-            isPlaying = isPlaying, // PASSAMOS O STATUS REAL AQUI!
+            isPlaying = isPlaying,
             staticArtworkBitmap = bitmap
         )
     }
 
+    @Suppress("DEPRECATION")
     private fun extractBitmapFromExtras(extras: Bundle): Bitmap? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            extras.getParcelable(Notification.EXTRA_LARGE_ICON_BIG, Bitmap::class.java) ?: extras.getParcelable(Notification.EXTRA_LARGE_ICON, Bitmap::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            (extras.getParcelable(Notification.EXTRA_LARGE_ICON_BIG) as? Bitmap) ?: (extras.getParcelable(Notification.EXTRA_LARGE_ICON) as? Bitmap)
+        return try {
+            // Lemos o objeto como algo genérico, sem forçar que seja um Bitmap
+            val obj = extras.get(Notification.EXTRA_LARGE_ICON_BIG) ?: extras.get(Notification.EXTRA_LARGE_ICON)
+
+            // Verificamos o tipo com segurança
+            when (obj) {
+                is Bitmap -> obj
+                else -> null // Se for Icon ou null, retornamos null e o MediaMetadata assume o trabalho
+            }
+        } catch (_: Exception) {
+            null
         }
     }
 }

@@ -2,6 +2,12 @@ package com.lucasvinicius.musicwallpaper.notification
 
 object SupportedMusicApps {
     val packages = setOf(
-        "com.apple.android.music" // Aqui dizemos que só queremos ouvir o Apple Music
+        "com.apple.android.music",                 // Apple Music
+        "com.spotify.music",                       // Spotify
+        "com.amazon.mp3",                          // Amazon Music
+        "com.aspiro.tidal",                        // Tidal
+        "com.google.android.apps.youtube.music",   // YouTube Music
+        "deezer.android.app",                      // Deezer
+        "com.soundcloud.android"                   // SoundCloud
     )
 }
