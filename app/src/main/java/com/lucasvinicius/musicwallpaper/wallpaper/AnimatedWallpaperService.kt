@@ -132,8 +132,13 @@ class AnimatedWallpaperService : WallpaperService() {
             observeDefaultJob?.cancel()
             transitionJob?.cancel()
             playerManager.release()
+            imageRenderer.release()
+            
+            currentBitmap?.recycle()
             currentBitmap = null
+            pendingBitmap?.recycle()
             pendingBitmap = null
+            
             engineScope.cancel()
         }
 
@@ -218,7 +223,7 @@ class AnimatedWallpaperService : WallpaperService() {
                         withContext(Dispatchers.Default) {
                             val duration = 300L
                             val startTime = System.currentTimeMillis()
-                            while (isActive) {
+                            while (isActive && isVisible) {
                                 val elapsed = System.currentTimeMillis() - startTime
                                 val progress = (elapsed.toFloat() / duration).coerceIn(0f, 1f)
                                 imageRenderer.drawCrossfade(holder, oldBitmap, newBitmap, progress, sourceDim, targetDim, sourceBlur, targetBlur)
@@ -226,6 +231,7 @@ class AnimatedWallpaperService : WallpaperService() {
                                 delay(16)
                             }
                         }
+                        oldBitmap.recycle()
                         currentBlurToApply = targetBlur
                         currentDimToApply = targetDim
                         pendingBitmap = null
@@ -249,14 +255,16 @@ class AnimatedWallpaperService : WallpaperService() {
                             val startTime = System.currentTimeMillis()
                             val blurToApply = currentBlurToApply
                             val dimToApply = currentDimToApply
-                            while (isActive) {
+                            val bitmapToFade = currentBitmap ?: return@withContext
+                            while (isActive && isVisible) {
                                 val elapsed = System.currentTimeMillis() - startTime
                                 val progress = (elapsed.toFloat() / duration).coerceIn(0f, 1f)
-                                imageRenderer.drawFadeOut(holder, currentBitmap!!, progress, dimToApply, blurToApply)
+                                imageRenderer.drawFadeOut(holder, bitmapToFade, progress, dimToApply, blurToApply)
                                 if (progress >= 1f) break
                                 delay(16)
                             }
                         }
+                        currentBitmap?.recycle()
                         currentBitmap = null
                         currentPath = null
                         currentDimToApply = 0

@@ -1,15 +1,15 @@
 package com.lucasvinicius.musicwallpaper.data.repository
 
+import android.util.LruCache
 import com.lucasvinicius.musicwallpaper.data.model.LookupResult
 import com.lucasvinicius.musicwallpaper.data.model.TrackInfo
 import com.lucasvinicius.musicwallpaper.data.remote.ItunesApi
-import java.util.Collections
 
 class ArtworkRepositoryImpl(
     private val itunesApi: ItunesApi
 ) : ArtworkRepository {
 
-    private val cache = Collections.synchronizedMap(mutableMapOf<String, LookupResult>())
+    private val cache = LruCache<String, LookupResult>(100)
 
     private fun cleanText(text: String): String {
         return text.replace("🅴", "")
@@ -26,7 +26,7 @@ class ArtworkRepositoryImpl(
         val cleanTitle = cleanText(trackInfo.title)
         val cacheKey = "$cleanArtist-$cleanTitle"
 
-        cache[cacheKey]?.let { return it }
+        cache.get(cacheKey)?.let { return it }
 
         if (cleanArtist.isBlank()) {
             return LookupResult.Error("Metadados insuficientes: artista obrigatório.")
@@ -43,15 +43,15 @@ class ArtworkRepositoryImpl(
                 if (thumbnailUrl != null) {
                     val highResUrl = thumbnailUrl.replace("100x100bb", "1000x1000bb")
                     val lookupResult = LookupResult.StaticHighRes(highResUrl)
-                    cache[cacheKey] = lookupResult
+                    cache.put(cacheKey, lookupResult)
                     lookupResult
                 } else {
-                    cache[cacheKey] = LookupResult.NotFound
+                    cache.put(cacheKey, LookupResult.NotFound)
                     LookupResult.NotFound
                 }
             } else {
                 val lookupResult = LookupResult.NotFound
-                cache[cacheKey] = lookupResult
+                cache.put(cacheKey, lookupResult)
                 lookupResult
             }
         } catch (e: Exception) {

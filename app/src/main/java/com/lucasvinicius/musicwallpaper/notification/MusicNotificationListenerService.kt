@@ -12,6 +12,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -108,15 +109,10 @@ class MusicNotificationListenerService : NotificationListenerService() {
         }
     }
 
-    override fun onNotificationRemoved(sbn: StatusBarNotification) {
-        if (sbn.packageName !in SupportedMusicApps.packages) return
-        lastProcessedTrackKey = null
-        lastSavedContent = null
+    override fun onDestroy() {
+        super.onDestroy()
         resolutionJob?.cancel()
-        serviceScope.launch {
-            val app = application as App
-            applyDefaultWallpaper(app)
-        }
+        serviceScope.cancel()
     }
 
     private suspend fun applyDefaultWallpaper(app: App) {

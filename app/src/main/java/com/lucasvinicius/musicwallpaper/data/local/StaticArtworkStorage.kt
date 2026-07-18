@@ -32,6 +32,7 @@ class StaticArtworkStorage(
             ensureActive()
             
             if (tempFile.exists()) {
+                if (finalFile.exists()) finalFile.delete()
                 tempFile.renameTo(finalFile)
             }
         } finally {
@@ -69,6 +70,7 @@ class StaticArtworkStorage(
             ensureActive()
             
             if (tempFile.exists()) {
+                if (finalFile.exists()) finalFile.delete()
                 if (tempFile.renameTo(finalFile)) {
                     finalFile.absolutePath
                 } else {

@@ -50,6 +50,15 @@ class WallpaperImageRenderer {
     private var blurNode2: Any? = null
     private var nextIndex = 0
 
+    fun release() {
+        blurBuffer1?.recycle()
+        blurBuffer1 = null
+        blurBuffer2?.recycle()
+        blurBuffer2 = null
+        blurNode1 = null
+        blurNode2 = null
+    }
+
     private fun drawBitmapToCanvas(canvas: android.graphics.Canvas, bitmap: Bitmap, blurPercentage: Int = 0, alpha: Int = 255) {
         srcRect.set(0, 0, bitmap.width, bitmap.height)
         val dst = calculateCenterCropRect(
@@ -112,7 +121,7 @@ class WallpaperImageRenderer {
         val targetHeight = (canvas.height * scale).toInt().coerceAtLeast(1)
 
         var buffer = if (index == 0) blurBuffer1 else blurBuffer2
-        if (buffer == null || buffer.width != targetWidth || buffer.height != targetHeight) {
+        if (buffer == null || buffer.width != targetWidth || buffer.height != targetHeight || buffer.isRecycled) {
             buffer?.recycle()
             buffer = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
             if (index == 0) blurBuffer1 = buffer else blurBuffer2 = buffer
@@ -127,16 +136,24 @@ class WallpaperImageRenderer {
         var nextH = bitmap.height
         
         // Downscale in steps of at most 2x to maintain smoothness
+        val stepBitmaps = mutableListOf<Bitmap>()
         while (nextW > targetWidth * 2 && nextH > targetHeight * 2) {
             nextW /= 2
             nextH /= 2
             val next = Bitmap.createScaledBitmap(currentBitmap, nextW, nextH, true)
-            if (currentBitmap !== bitmap) currentBitmap.recycle()
+            if (currentBitmap !== bitmap) {
+                stepBitmaps.add(next)
+            }
             currentBitmap = next
         }
         
         tempCanvas.drawBitmap(currentBitmap, null, Rect(0, 0, targetWidth, targetHeight), paint)
-        if (currentBitmap !== bitmap) currentBitmap.recycle()
+        
+        // Cleanup intermediate bitmaps
+        stepBitmaps.forEach { if (it !== currentBitmap) it.recycle() }
+        if (currentBitmap !== bitmap && !stepBitmaps.contains(currentBitmap)) {
+             currentBitmap.recycle()
+        }
         
         // Draw the blurred buffer back to the main canvas
         canvas.drawBitmap(buffer, null, dstRect, paint)
