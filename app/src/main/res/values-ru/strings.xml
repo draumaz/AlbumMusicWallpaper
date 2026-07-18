@@ -4,11 +4,11 @@
     <string name="notification_access_blocked">❌ Доступ к уведомлениям: ЗАБЛОКИРОВАН</string>
     <string name="dim_level_label">Затемнение обложки: %1$d%%</string>
     <string name="blur_level_label">Размытие обложки: %1$d%%</string>
-    <string name="btn_notification_access">1. Открыть доступ к уведомлениям</string>
-    <string name="btn_choose_wallpaper">2. Выбрать эти обои (Живые)</string>
-    <string name="btn_choose_default_photo">3. Выбрать фото по умолчанию (фон при паузе)</string>
+    <string name="btn_notification_access">1. Предоставить доступ к уведомлениям</string>
+    <string name="btn_choose_default_photo">2. Установить фон (когда ничего не воспроизводится)</string>
+    <string name="btn_choose_wallpaper">3. Установить как обои</string>
     <string name="toast_wallpaper_saved">Фото по умолчанию сохранено!</string>
-    <string name="live_status_header">ТЕКУЩИЙ СТАТУС</string>
+    <string name="live_status_header">Статус</string>
     <string name="track_label">Трек: %1$s</string>
     <string name="artist_label">Исполнитель: %1$s</string>
     <string name="album_label">Альбом: %1$s</string>

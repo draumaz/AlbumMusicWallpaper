@@ -4,11 +4,11 @@
     <string name="notification_access_blocked">❌ Notification Access: BLOCKED</string>
     <string name="dim_level_label">Static Cover Dimming: %1$d%%</string>
     <string name="blur_level_label">Static Cover Blur: %1$d%%</string>
-    <string name="btn_notification_access">1. Open notification access</string>
-    <string name="btn_choose_wallpaper">2. Choose this wallpaper (Live)</string>
-    <string name="btn_choose_default_photo">3. Choose Default Photo (Background for Pause/Idle)</string>
+    <string name="btn_notification_access">1. Grant notification access</string>
+    <string name="btn_choose_default_photo">2. Set background (for when nothing\'s playing)</string>
+    <string name="btn_choose_wallpaper">3. Set as wallpaper</string>
     <string name="toast_wallpaper_saved">Default wallpaper saved!</string>
-    <string name="live_status_header">LIVE STATUS</string>
+    <string name="live_status_header">Status</string>
     <string name="track_label">Track: %1$s</string>
     <string name="artist_label">Artist: %1$s</string>
     <string name="album_label">Album: %1$s</string>

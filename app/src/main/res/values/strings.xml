@@ -4,9 +4,9 @@
     <string name="notification_access_blocked">❌ Acesso às notificações: BLOQUEADO</string>
     <string name="dim_level_label">Escurecimento da Capa Estática: %1$d%%</string>
     <string name="blur_level_label">Desfoque da Capa Estática: %1$d%%</string>
-    <string name="btn_notification_access">1. Abrir acesso às notificações</string>
-    <string name="btn_choose_wallpaper">2. Escolher este papel de parede (Live)</string>
-    <string name="btn_choose_default_photo">3. Escolher Foto Padrão (Fundo para Pause/Ocioso)</string>
+    <string name="btn_notification_access">1. Conceder acesso às notificações</string>
+    <string name="btn_choose_default_photo">2. Definir fundo (para quando nada está tocando)</string>
+    <string name="btn_choose_wallpaper">3. Definir como papel de parede</string>
     <string name="toast_wallpaper_saved">Papel de parede padrão salvo!</string>
     <string name="live_status_header">STATUS AO VIVO</string>
     <string name="track_label">Faixa: %1$s</string>
