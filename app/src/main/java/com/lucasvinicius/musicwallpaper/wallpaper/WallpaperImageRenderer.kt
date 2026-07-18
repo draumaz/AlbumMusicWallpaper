@@ -156,7 +156,8 @@ class WallpaperImageRenderer {
         fromBitmap: Bitmap?,
         toBitmap: Bitmap,
         progress: Float,
-        dimPercentage: Int,
+        fromDimPercentage: Int,
+        toDimPercentage: Int,
         fromBlurPercentage: Int,
         toBlurPercentage: Int
     ) {
@@ -173,7 +174,8 @@ class WallpaperImageRenderer {
             nextIndex = 1
             drawBitmapToCanvas(canvas, toBitmap, toBlurPercentage, toAlpha)
 
-            drawDimmingToCanvas(canvas, dimPercentage)
+            val currentDim = fromDimPercentage + (toDimPercentage - fromDimPercentage) * progress
+            drawDimmingToCanvas(canvas, currentDim.toInt())
         } finally {
             holder.unlockCanvasAndPost(canvas)
         }
@@ -192,7 +194,10 @@ class WallpaperImageRenderer {
             canvas.drawColor(Color.BLACK)
             val alpha = ((1.0f - progress) * 255).toInt()
             drawBitmapToCanvas(canvas, bitmap, blurPercentage, alpha)
-            drawDimmingToCanvas(canvas, dimPercentage)
+            
+            // Fade out the dimming as well
+            val currentDim = (dimPercentage * (1.0f - progress)).toInt()
+            drawDimmingToCanvas(canvas, currentDim)
         } finally {
             holder.unlockCanvasAndPost(canvas)
         }

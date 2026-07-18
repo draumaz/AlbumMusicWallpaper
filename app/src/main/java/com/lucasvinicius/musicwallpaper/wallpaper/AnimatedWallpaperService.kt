@@ -44,6 +44,7 @@ class AnimatedWallpaperService : WallpaperService() {
         private var currentDimLevel = 30
         private var currentBlurLevel = 0
         private var currentBlurToApply = 0
+        private var currentDimToApply = 0
         private var defaultWallpaperPath: String? = null
 
         override fun onCreate(surfaceHolder: SurfaceHolder) {
@@ -164,10 +165,12 @@ class AnimatedWallpaperService : WallpaperService() {
                     if (!surfaceReady) return
                     val path = content.staticImagePath ?: return
                     val targetBlur = if (path == defaultWallpaperPath) 0 else currentBlurLevel
+                    val targetDim = if (path == defaultWallpaperPath) 0 else currentDimLevel
 
                     if (transitionJob?.isActive != true && currentBitmap != null && currentPath == path) {
                         currentBlurToApply = targetBlur
-                        imageRenderer.draw(holder, currentBitmap!!, currentDimLevel, targetBlur)
+                        currentDimToApply = targetDim
+                        imageRenderer.draw(holder, currentBitmap!!, targetDim, targetBlur)
                         return
                     }
                     
@@ -190,7 +193,7 @@ class AnimatedWallpaperService : WallpaperService() {
                         if (newBitmap == null) {
                             pendingBitmap = null
                             pendingPath = null
-                            currentBitmap?.let { imageRenderer.draw(holder, it, currentDimLevel, currentBlurToApply) }
+                            currentBitmap?.let { imageRenderer.draw(holder, it, currentDimToApply, currentBlurToApply) }
                             return@launch
                         }
                         
@@ -199,12 +202,14 @@ class AnimatedWallpaperService : WallpaperService() {
 
                         val oldBitmap = currentBitmap
                         val sourceBlur = currentBlurToApply
+                        val sourceDim = currentDimToApply
                         currentBitmap = newBitmap
                         currentPath = path
 
                         if (oldBitmap == null || oldBitmap == newBitmap) {
-                            imageRenderer.draw(holder, newBitmap, currentDimLevel, targetBlur)
+                            imageRenderer.draw(holder, newBitmap, targetDim, targetBlur)
                             currentBlurToApply = targetBlur
+                            currentDimToApply = targetDim
                             pendingBitmap = null
                             pendingPath = null
                             return@launch
@@ -216,12 +221,13 @@ class AnimatedWallpaperService : WallpaperService() {
                             while (isActive) {
                                 val elapsed = System.currentTimeMillis() - startTime
                                 val progress = (elapsed.toFloat() / duration).coerceIn(0f, 1f)
-                                imageRenderer.drawCrossfade(holder, oldBitmap, newBitmap, progress, currentDimLevel, sourceBlur, targetBlur)
+                                imageRenderer.drawCrossfade(holder, oldBitmap, newBitmap, progress, sourceDim, targetDim, sourceBlur, targetBlur)
                                 if (progress >= 1f) break
                                 delay(16)
                             }
                         }
                         currentBlurToApply = targetBlur
+                        currentDimToApply = targetDim
                         pendingBitmap = null
                         pendingPath = null
                     }
@@ -242,16 +248,19 @@ class AnimatedWallpaperService : WallpaperService() {
                             val duration = 600L
                             val startTime = System.currentTimeMillis()
                             val blurToApply = currentBlurToApply
+                            val dimToApply = currentDimToApply
                             while (isActive) {
                                 val elapsed = System.currentTimeMillis() - startTime
                                 val progress = (elapsed.toFloat() / duration).coerceIn(0f, 1f)
-                                imageRenderer.drawFadeOut(holder, currentBitmap!!, progress, currentDimLevel, blurToApply)
+                                imageRenderer.drawFadeOut(holder, currentBitmap!!, progress, dimToApply, blurToApply)
                                 if (progress >= 1f) break
                                 delay(16)
                             }
                         }
                         currentBitmap = null
                         currentPath = null
+                        currentDimToApply = 0
+                        currentBlurToApply = 0
                     }
                 }
             }
