@@ -3,6 +3,7 @@ package com.lucasvinicius.musicwallpaper
 import android.app.WallpaperManager
 import android.content.ComponentName
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
@@ -80,8 +82,6 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MusicWallpaperTheme {
-                val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-                
                 var isNotificationEnabled by remember { mutableStateOf(checkNotificationAccess()) }
                 val wallpaperContent by app.wallpaperStateStore.contentFlow.collectAsStateWithLifecycle(initialValue = null)
                 val dimLevel by app.wallpaperStateStore.dimLevelFlow.collectAsStateWithLifecycle(initialValue = 30)
@@ -101,11 +101,20 @@ class MainActivity : ComponentActivity() {
                 }
 
                 Scaffold(
-                    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                     topBar = {
-                        LargeTopAppBar(
+                        TopAppBar(
                             title = { Text(stringResource(R.string.app_name)) },
-                            scrollBehavior = scrollBehavior
+                            actions = {
+                                IconButton(onClick = {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/draumaz/AlbumMusicWallpaper"))
+                                    startActivity(intent)
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                                        contentDescription = stringResource(R.string.help_description)
+                                    )
+                                }
+                            }
                         )
                     }
                 ) { innerPadding ->
@@ -113,10 +122,11 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier
                             .padding(innerPadding)
                             .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        SectionHeader(stringResource(R.string.permissions_section_title))
+
                         // Notification Status Card
                         StatusCard(
                             enabled = isNotificationEnabled,
@@ -127,7 +137,13 @@ class MainActivity : ComponentActivity() {
 
                         // Actions Section
                         SectionHeader(stringResource(R.string.actions_section_title))
-                        
+
+                        ActionCard(
+                            text = stringResource(R.string.btn_choose_default_photo),
+                            icon = Icons.Default.Image,
+                            onClick = { pickImageLauncher.launch("image/*") }
+                        )
+
                         ActionCard(
                             text = stringResource(R.string.btn_choose_wallpaper),
                             icon = Icons.Default.Wallpaper,
@@ -137,12 +153,6 @@ class MainActivity : ComponentActivity() {
                                 }
                                 startActivity(intent)
                             }
-                        )
-
-                        ActionCard(
-                            text = stringResource(R.string.btn_choose_default_photo),
-                            icon = Icons.Default.Image,
-                            onClick = { pickImageLauncher.launch("image/*") }
                         )
 
                         // Appearance Section
@@ -288,11 +298,11 @@ fun LiveStatusCard(content: WallpaperContent?) {
             } else {
                 StatusItem(stringResource(R.string.track_label, content.trackTitle ?: "-"))
                 StatusItem(stringResource(R.string.artist_label, content.trackArtist ?: "-"))
-                StatusItem(stringResource(R.string.album_label, content.trackAlbum ?: "-"))
-                StatusItem(stringResource(R.string.type_label, content.contentType.name))
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                StatusItem(stringResource(R.string.animated_url_label, content.animatedUrl ?: "-"))
-                StatusItem(stringResource(R.string.static_path_label, content.staticImagePath ?: "-"))
+                //StatusItem(stringResource(R.string.album_label, content.trackAlbum ?: "-"))
+                //StatusItem(stringResource(R.string.type_label, content.contentType.name))
+                //HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                //StatusItem(stringResource(R.string.animated_url_label, content.animatedUrl ?: "-"))
+                //StatusItem(stringResource(R.string.static_path_label, content.staticImagePath ?: "-"))
             }
         }
     }

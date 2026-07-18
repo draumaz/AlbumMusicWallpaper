@@ -1,0 +1,9 @@
+- [ ] Add `help_description` to string resources
+    - [ ] Update `app/src/main/res/values/strings.xml`
+    - [ ] Update `app/src/main/res/values-en/strings.xml`
+    - [ ] Update `app/src/main/res/values-ru/strings.xml`
+- [ ] Update `MainActivity.kt`
+    - [ ] Add imports for `Uri`, `IconButton`, and `HelpOutline` icon
+    - [ ] Add help button to `TopAppBar` actions
+- [ ] Verify changes
+    - [ ] Run build

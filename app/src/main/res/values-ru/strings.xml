@@ -18,4 +18,6 @@
     <string name="settings_title">Настройки</string>
     <string name="dimming_section_title">Внешний вид</string>
     <string name="actions_section_title">Действия</string>
+    <string name="permissions_section_title">Разрешения</string>
+    <string name="help_description">Открыть GitHub проекта</string>
 </resources>

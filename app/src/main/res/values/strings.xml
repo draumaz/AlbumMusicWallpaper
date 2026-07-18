@@ -18,4 +18,6 @@
     <string name="settings_title">Configurações</string>
     <string name="dimming_section_title">Aparência</string>
     <string name="actions_section_title">Ações</string>
+    <string name="permissions_section_title">Permissões</string>
+    <string name="help_description">Abrir GitHub do projeto</string>
 </resources>
