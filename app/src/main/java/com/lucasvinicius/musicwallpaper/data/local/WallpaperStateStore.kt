@@ -31,6 +31,9 @@ class WallpaperStateStore(
 
         // CHAVE NOVA PARA O NÍVEL DE ESCURECIMENTO (0 a 100)
         val DIM_LEVEL = intPreferencesKey("dim_level")
+
+        // CHAVE PARA O NÍVEL DE BLUR (0 a 100)
+        val BLUR_LEVEL = intPreferencesKey("blur_level")
     }
 
     val contentFlow: Flow<WallpaperContent> = context.dataStore.data.map { prefs ->
@@ -59,6 +62,11 @@ class WallpaperStateStore(
         prefs[Keys.DIM_LEVEL] ?: 30
     }
 
+    // Fluxo novo para ler o nível de blur (Padrão: 0%)
+    val blurLevelFlow: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[Keys.BLUR_LEVEL] ?: 0
+    }
+
     suspend fun save(content: WallpaperContent) {
         context.dataStore.edit { prefs ->
             prefs[Keys.TRACK_TITLE] = content.trackTitle.orEmpty()
@@ -83,6 +91,13 @@ class WallpaperStateStore(
     suspend fun saveDimLevel(level: Int) {
         context.dataStore.edit { prefs ->
             prefs[Keys.DIM_LEVEL] = level
+        }
+    }
+
+    // Função nova para salvar o nível de blur do Slider
+    suspend fun saveBlurLevel(level: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.BLUR_LEVEL] = level
         }
     }
 }

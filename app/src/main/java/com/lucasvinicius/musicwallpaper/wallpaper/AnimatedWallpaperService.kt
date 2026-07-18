@@ -1,16 +1,16 @@
 package com.lucasvinicius.musicwallpaper.wallpaper
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.service.wallpaper.WallpaperService
+import android.util.Log
 import android.view.SurfaceHolder
 import com.lucasvinicius.musicwallpaper.App
 import com.lucasvinicius.musicwallpaper.data.model.WallpaperContent
 import com.lucasvinicius.musicwallpaper.data.model.WallpaperContentType
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.merge
 import java.io.File
 
 class AnimatedWallpaperService : WallpaperService() {
@@ -21,56 +21,73 @@ class AnimatedWallpaperService : WallpaperService() {
 
     inner class AnimatedWallpaperEngine : Engine() {
 
-        private val engineScope = CoroutineScope(Dispatchers.Main)
+        private val engineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
         private lateinit var playerManager: WallpaperPlayerManager
         private val imageRenderer = WallpaperImageRenderer()
 
         private var observeContentJob: Job? = null
         private var observeDimJob: Job? = null
+        private var observeBlurJob: Job? = null
+        private var observeDefaultJob: Job? = null
+        private var transitionJob: Job? = null
 
         private var currentHolder: SurfaceHolder? = null
         private var surfaceReady = false
         private var lastContent: WallpaperContent? = null
 
-        // A nossa memória para saber se o Oppo "soldou" a tela com a foto
-        private var wasUsingCanvas = false
+        private var currentBitmap: Bitmap? = null
+        private var currentPath: String? = null
+        private var pendingBitmap: Bitmap? = null
+        private var pendingPath: String? = null
 
-        // Memória do nível de escurecimento atual
+        private var wasUsingCanvas = false
         private var currentDimLevel = 30
+        private var currentBlurLevel = 0
+        private var currentBlurToApply = 0
+        private var defaultWallpaperPath: String? = null
 
         override fun onCreate(surfaceHolder: SurfaceHolder) {
             super.onCreate(surfaceHolder)
 
             playerManager = WallpaperPlayerManager(applicationContext) {
-                // PLANO B: O vídeo falhou! Mudamos a música para o formato STATIC e salvamos.
                 val content = lastContent ?: return@WallpaperPlayerManager
                 val app = application as App
-
                 if (content.contentType == WallpaperContentType.ANIMATED && content.staticImagePath != null) {
                     engineScope.launch {
-                        app.wallpaperStateStore.save(
-                            content.copy(contentType = WallpaperContentType.STATIC, animatedUrl = null)
-                        )
+                        app.wallpaperStateStore.save(content.copy(contentType = WallpaperContentType.STATIC, animatedUrl = null))
                     }
                 }
             }
 
             val app = application as App
 
-            // 1. Observa a música que está tocando
             observeContentJob = engineScope.launch {
-                app.wallpaperStateStore.contentFlow.collectLatest { content ->
-                    lastContent = content
-                    renderContent(content)
+                // Merge DataStore for persistence/startup and live flow for instant skip triggers
+                merge(app.wallpaperStateStore.contentFlow, app.liveWallpaperFlow).collectLatest { content ->
+                    if (content.updatedAt > (lastContent?.updatedAt ?: 0L)) {
+                        lastContent = content
+                        renderContent(content)
+                    }
                 }
             }
 
-            // 2. Observa a barra de escurecimento (Slider)
             observeDimJob = engineScope.launch {
                 app.wallpaperStateStore.dimLevelFlow.collectLatest { level ->
                     currentDimLevel = level
-                    // Sempre que o nível muda, forçamos a tela a pintar o novo escurecimento
                     lastContent?.let { renderContent(it) }
+                }
+            }
+
+            observeBlurJob = engineScope.launch {
+                app.wallpaperStateStore.blurLevelFlow.collectLatest { level ->
+                    currentBlurLevel = level
+                    lastContent?.let { renderContent(it) }
+                }
+            }
+
+            observeDefaultJob = engineScope.launch {
+                app.wallpaperStateStore.defaultWallpaperFlow.collectLatest { path ->
+                    defaultWallpaperPath = path
                 }
             }
         }
@@ -80,8 +97,6 @@ class AnimatedWallpaperService : WallpaperService() {
             currentHolder = holder
             surfaceReady = true
             playerManager.attachSurface(holder)
-
-            // A tela nova e destravada chegou! Vamos desenhar.
             lastContent?.let { renderContent(it) }
         }
 
@@ -94,7 +109,6 @@ class AnimatedWallpaperService : WallpaperService() {
         override fun onVisibilityChanged(visible: Boolean) {
             super.onVisibilityChanged(visible)
             val content = lastContent ?: return
-
             when {
                 visible && content.contentType == WallpaperContentType.ANIMATED -> playerManager.resume()
                 !visible && content.contentType == WallpaperContentType.ANIMATED -> playerManager.pause()
@@ -113,50 +127,162 @@ class AnimatedWallpaperService : WallpaperService() {
             super.onDestroy()
             observeContentJob?.cancel()
             observeDimJob?.cancel()
+            observeBlurJob?.cancel()
+            observeDefaultJob?.cancel()
+            transitionJob?.cancel()
             playerManager.release()
+            currentBitmap = null
+            pendingBitmap = null
             engineScope.cancel()
         }
 
         private fun renderContent(content: WallpaperContent) {
             val holder = currentHolder ?: return
-
+            
             when (content.contentType) {
                 WallpaperContentType.ANIMATED -> {
-                    // O HACK DO OPPO: Se usávamos foto, a tela está bloqueada. Vamos destruí-la!
+                    transitionJob?.cancel()
                     if (wasUsingCanvas) {
                         wasUsingCanvas = false
                         val w = holder.surfaceFrame.width()
                         val h = holder.surfaceFrame.height()
                         if (w > 0 && h > 0) {
-                            holder.setFixedSize(w, h - 1) // Encolhe a tela 1 pixel
-                            holder.setSizeFromLayout()    // Volta ao tamanho original
+                            holder.setFixedSize(w, h - 1)
+                            holder.setSizeFromLayout()
                         }
-                        // Saímos daqui e esperamos o Android chamar onSurfaceCreated com a tela nova
                         return
                     }
-
                     if (!surfaceReady) return
-
                     val url = content.animatedUrl ?: return
                     playerManager.attachSurface(holder)
                     playerManager.play(url)
                 }
 
                 WallpaperContentType.STATIC -> {
-                    wasUsingCanvas = true // Avisamos que soldamos a tela com o cabo de foto
-
+                    val prevWasCanvas = wasUsingCanvas
+                    wasUsingCanvas = true
                     if (!surfaceReady) return
                     val path = content.staticImagePath ?: return
-                    if (!File(path).exists()) return
+                    val targetBlur = if (path == defaultWallpaperPath) 0 else currentBlurLevel
 
-                    playerManager.stopAndClearSurface()
+                    if (transitionJob?.isActive != true && currentBitmap != null && currentPath == path) {
+                        currentBlurToApply = targetBlur
+                        imageRenderer.draw(holder, currentBitmap!!, currentDimLevel, targetBlur)
+                        return
+                    }
+                    
+                    transitionJob?.cancel()
+                    transitionJob = engineScope.launch {
+                        val frame = holder.surfaceFrame
+                        val targetWidth = frame.width().coerceAtLeast(1)
+                        val targetHeight = frame.height().coerceAtLeast(1)
 
-                    // ENVIAMOS O NÍVEL DE ESCURECIMENTO AQUI:
-                    imageRenderer.drawFromPath(holder, path, currentDimLevel)
+                        val newBitmap = if (pendingPath == path && pendingBitmap != null) {
+                            pendingBitmap
+                        } else {
+                            pendingPath = path
+                            pendingBitmap = null
+                            withContext(Dispatchers.IO) {
+                                decodeSampledBitmap(path, targetWidth, targetHeight)
+                            }
+                        }
+
+                        if (newBitmap == null) {
+                            pendingBitmap = null
+                            pendingPath = null
+                            currentBitmap?.let { imageRenderer.draw(holder, it, currentDimLevel, currentBlurToApply) }
+                            return@launch
+                        }
+                        
+                        pendingBitmap = newBitmap
+                        if (!prevWasCanvas) playerManager.stopAndClearSurface()
+
+                        val oldBitmap = currentBitmap
+                        val sourceBlur = currentBlurToApply
+                        currentBitmap = newBitmap
+                        currentPath = path
+
+                        if (oldBitmap == null || oldBitmap == newBitmap) {
+                            imageRenderer.draw(holder, newBitmap, currentDimLevel, targetBlur)
+                            currentBlurToApply = targetBlur
+                            pendingBitmap = null
+                            pendingPath = null
+                            return@launch
+                        }
+
+                        withContext(Dispatchers.Default) {
+                            val duration = 300L
+                            val startTime = System.currentTimeMillis()
+                            while (isActive) {
+                                val elapsed = System.currentTimeMillis() - startTime
+                                val progress = (elapsed.toFloat() / duration).coerceIn(0f, 1f)
+                                imageRenderer.drawCrossfade(holder, oldBitmap, newBitmap, progress, currentDimLevel, sourceBlur, targetBlur)
+                                if (progress >= 1f) break
+                                delay(16)
+                            }
+                        }
+                        currentBlurToApply = targetBlur
+                        pendingBitmap = null
+                        pendingPath = null
+                    }
                 }
 
-                WallpaperContentType.NONE -> {}
+                WallpaperContentType.NONE -> {
+                    transitionJob?.cancel()
+                    transitionJob = engineScope.launch {
+                        pendingBitmap = null
+                        pendingPath = null
+                        if (currentBitmap == null) {
+                             val canvas = holder.lockHardwareCanvas()
+                             canvas.drawColor(android.graphics.Color.BLACK)
+                             holder.unlockCanvasAndPost(canvas)
+                             return@launch
+                        }
+                        withContext(Dispatchers.Default) {
+                            val duration = 600L
+                            val startTime = System.currentTimeMillis()
+                            val blurToApply = currentBlurToApply
+                            while (isActive) {
+                                val elapsed = System.currentTimeMillis() - startTime
+                                val progress = (elapsed.toFloat() / duration).coerceIn(0f, 1f)
+                                imageRenderer.drawFadeOut(holder, currentBitmap!!, progress, currentDimLevel, blurToApply)
+                                if (progress >= 1f) break
+                                delay(16)
+                            }
+                        }
+                        currentBitmap = null
+                        currentPath = null
+                    }
+                }
             }
+        }
+
+        private fun decodeSampledBitmap(path: String, reqWidth: Int, reqHeight: Int): Bitmap? {
+            return try {
+                val file = File(path)
+                if (!file.exists()) return null
+                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeFile(path, options)
+                options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+                options.inJustDecodeBounds = false
+                BitmapFactory.decodeFile(path, options)
+            } catch (e: Exception) {
+                Log.e("AnimatedWallpaper", "Error decoding bitmap", e)
+                null
+            }
+        }
+
+        private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+            val (height: Int, width: Int) = options.outHeight to options.outWidth
+            var inSampleSize = 1
+            if (height > reqHeight || width > reqWidth) {
+                val halfHeight: Int = height / 2
+                val halfWidth: Int = width / 2
+                while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                    inSampleSize *= 2
+                }
+            }
+            return inSampleSize
         }
     }
 }

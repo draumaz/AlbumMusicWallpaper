@@ -1,0 +1,5 @@
+- [ ] Update build configuration (Compose support)
+- [ ] Extract and add localized strings (PT, EN, RU)
+- [ ] Create Material 3 Expressive theme
+- [ ] Redesign MainActivity using Jetpack Compose
+- [ ] Verify build and functionality

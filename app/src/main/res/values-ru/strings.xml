@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Music Wallpaper</string>
+    <string name="notification_access_allowed">✅ Доступ к уведомлениям: РАЗРЕШЕН</string>
+    <string name="notification_access_blocked">❌ Доступ к уведомлениям: ЗАБЛОКИРОВАН</string>
+    <string name="dim_level_label">Затемнение обложки: %1$d%%</string>
+    <string name="blur_level_label">Размытие обложки: %1$d%%</string>
+    <string name="btn_notification_access">1. Открыть доступ к уведомлениям</string>
+    <string name="btn_choose_wallpaper">2. Выбрать эти обои (Живые)</string>
+    <string name="btn_choose_default_photo">3. Выбрать фото по умолчанию (фон при паузе)</string>
+    <string name="toast_wallpaper_saved">Фото по умолчанию сохранено!</string>
+    <string name="live_status_header">ТЕКУЩИЙ СТАТУС</string>
+    <string name="track_label">Трек: %1$s</string>
+    <string name="artist_label">Исполнитель: %1$s</string>
+    <string name="album_label">Альбом: %1$s</string>
+    <string name="type_label">Тип: %1$s</string>
+    <string name="animated_url_label">URL анимации: %1$s</string>
+    <string name="static_path_label">Путь к изображению: %1$s</string>
+    <string name="settings_title">Настройки</string>
+    <string name="dimming_section_title">Внешний вид</string>
+    <string name="actions_section_title">Действия</string>
+</resources>

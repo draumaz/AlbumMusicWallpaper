@@ -1,3 +1,21 @@
 <resources>
     <string name="app_name">Music Wallpaper</string>
+    <string name="notification_access_allowed">✅ Acesso às notificações: PERMITIDO</string>
+    <string name="notification_access_blocked">❌ Acesso às notificações: BLOQUEADO</string>
+    <string name="dim_level_label">Escurecimento da Capa Estática: %1$d%%</string>
+    <string name="blur_level_label">Desfoque da Capa Estática: %1$d%%</string>
+    <string name="btn_notification_access">1. Abrir acesso às notificações</string>
+    <string name="btn_choose_wallpaper">2. Escolher este papel de parede (Live)</string>
+    <string name="btn_choose_default_photo">3. Escolher Foto Padrão (Fundo para Pause/Ocioso)</string>
+    <string name="toast_wallpaper_saved">Papel de parede padrão salvo!</string>
+    <string name="live_status_header">STATUS AO VIVO</string>
+    <string name="track_label">Faixa: %1$s</string>
+    <string name="artist_label">Artista: %1$s</string>
+    <string name="album_label">Álbum: %1$s</string>
+    <string name="type_label">Tipo: %1$s</string>
+    <string name="animated_url_label">Animated URL: %1$s</string>
+    <string name="static_path_label">Static Path: %1$s</string>
+    <string name="settings_title">Configurações</string>
+    <string name="dimming_section_title">Aparência</string>
+    <string name="actions_section_title">Ações</string>
 </resources>

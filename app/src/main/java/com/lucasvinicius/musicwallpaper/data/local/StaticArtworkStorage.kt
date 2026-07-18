@@ -2,12 +2,16 @@ package com.lucasvinicius.musicwallpaper.data.local
 
 import android.content.Context
 import android.graphics.Bitmap
+import com.lucasvinicius.musicwallpaper.App
 import com.lucasvinicius.musicwallpaper.data.model.TrackInfo
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import okhttp3.Request
+import okio.buffer
+import okio.sink
 import java.io.File
 import java.io.FileOutputStream
-import java.net.URL
 
 class StaticArtworkStorage(
     private val context: Context
@@ -16,26 +20,69 @@ class StaticArtworkStorage(
     suspend fun save(bitmap: Bitmap, trackInfo: TrackInfo): String = withContext(Dispatchers.IO) {
         val safeArtist = sanitize(trackInfo.artist)
         val safeTitle = sanitize(trackInfo.title)
-        val file = File(context.cacheDir, "art_${safeArtist}_${safeTitle}.jpg")
+        val finalFile = File(context.cacheDir, "art_${safeArtist}_${safeTitle}.jpg")
+        val tempFile = File(context.cacheDir, "art_${safeArtist}_${safeTitle}.jpg.tmp")
 
-        FileOutputStream(file).use { out ->
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
-            out.flush()
+        try {
+            FileOutputStream(tempFile).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
+                out.flush()
+            }
+            
+            ensureActive()
+            
+            if (tempFile.exists()) {
+                tempFile.renameTo(finalFile)
+            }
+        } finally {
+            if (tempFile.exists()) {
+                tempFile.delete()
+            }
         }
-        file.absolutePath
+        finalFile.absolutePath
     }
 
     // BAIXA A FOTO 4K DA INTERNET (Plano B)
     suspend fun downloadAndSave(imageUrl: String, trackInfo: TrackInfo): String? = withContext(Dispatchers.IO) {
+        val safeArtist = sanitize(trackInfo.artist)
+        val safeTitle = sanitize(trackInfo.title)
+        val finalFile = File(context.cacheDir, "highres_${safeArtist}_${safeTitle}.jpg")
+        val tempFile = File(context.cacheDir, "highres_${safeArtist}_${safeTitle}.jpg.tmp")
+
         try {
-            val bytes = URL(imageUrl).readBytes()
-            val safeArtist = sanitize(trackInfo.artist)
-            val safeTitle = sanitize(trackInfo.title)
-            val file = File(context.cacheDir, "highres_${safeArtist}_${safeTitle}.jpg")
-            file.writeBytes(bytes)
-            file.absolutePath
+            val app = context.applicationContext as App
+            val client = app.okHttpClient
+            
+            val request = Request.Builder().url(imageUrl).build()
+            
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@withContext null
+                
+                tempFile.sink().buffer().use { sink ->
+                    response.body?.source()?.let { source ->
+                        sink.writeAll(source)
+                    }
+                    sink.flush()
+                }
+            }
+            
+            ensureActive()
+            
+            if (tempFile.exists()) {
+                if (tempFile.renameTo(finalFile)) {
+                    finalFile.absolutePath
+                } else {
+                    null
+                }
+            } else {
+                null
+            }
         } catch (e: Exception) {
-            null // Se der erro de internet, devolve nulo
+            null // Se der erro de internet ou cancelamento, devolve nulo
+        } finally {
+            if (tempFile.exists()) {
+                tempFile.delete()
+            }
         }
     }
 

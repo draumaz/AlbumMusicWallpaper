@@ -1,0 +1,6 @@
+- [ ] Add `BLUR_LEVEL` to `WallpaperStateStore`
+- [ ] Add Blur slider to `MainActivity` UI
+- [ ] Update `strings.xml` with blur labels (EN, RU, PT)
+- [ ] Implement blur logic in `WallpaperImageRenderer`
+- [ ] Observe and apply blur level in `AnimatedWallpaperService`
+- [ ] Verify changes

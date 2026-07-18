@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Music Wallpaper</string>
+    <string name="notification_access_allowed">✅ Notification Access: ALLOWED</string>
+    <string name="notification_access_blocked">❌ Notification Access: BLOCKED</string>
+    <string name="dim_level_label">Static Cover Dimming: %1$d%%</string>
+    <string name="blur_level_label">Static Cover Blur: %1$d%%</string>
+    <string name="btn_notification_access">1. Open notification access</string>
+    <string name="btn_choose_wallpaper">2. Choose this wallpaper (Live)</string>
+    <string name="btn_choose_default_photo">3. Choose Default Photo (Background for Pause/Idle)</string>
+    <string name="toast_wallpaper_saved">Default wallpaper saved!</string>
+    <string name="live_status_header">LIVE STATUS</string>
+    <string name="track_label">Track: %1$s</string>
+    <string name="artist_label">Artist: %1$s</string>
+    <string name="album_label">Album: %1$s</string>
+    <string name="type_label">Type: %1$s</string>
+    <string name="animated_url_label">Animated URL: %1$s</string>
+    <string name="static_path_label">Static Path: %1$s</string>
+    <string name="settings_title">Settings</string>
+    <string name="dimming_section_title">Appearance</string>
+    <string name="actions_section_title">Actions</string>
+</resources>
