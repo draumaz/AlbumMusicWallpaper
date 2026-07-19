@@ -11,7 +11,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.Crossfade
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -93,26 +95,26 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MusicWallpaperTheme {
-                var currentScreen by remember { mutableStateOf("main") }
+                val navController = rememberNavController()
 
-                Crossfade(targetState = currentScreen) { screen ->
-                    when (screen) {
-                        "main" -> MainScreen(
-                            onNavigateToAppSelection = { currentScreen = "app_selection" },
+                NavHost(navController = navController, startDestination = "main") {
+                    composable("main") {
+                        MainScreen(
+                            onNavigateToAppSelection = { navController.navigate("app_selection") },
                             onPickImage = { pickImageLauncher.launch("image/*") }
                         )
-                        "app_selection" -> {
-                            val supportedPackages by app.wallpaperStateStore.supportedPackagesFlow.collectAsStateWithLifecycle(initialValue = emptySet())
-                            AppSelectionScreen(
-                                selectedPackages = supportedPackages,
-                                onPackagesChanged = { newSet ->
-                                    lifecycleScope.launch {
-                                        app.wallpaperStateStore.saveSupportedPackages(newSet)
-                                    }
-                                },
-                                onBack = { currentScreen = "main" }
-                            )
-                        }
+                    }
+                    composable("app_selection") {
+                        val supportedPackages by app.wallpaperStateStore.supportedPackagesFlow.collectAsStateWithLifecycle(initialValue = emptySet())
+                        AppSelectionScreen(
+                            selectedPackages = supportedPackages,
+                            onPackagesChanged = { newSet ->
+                                lifecycleScope.launch {
+                                    app.wallpaperStateStore.saveSupportedPackages(newSet)
+                                }
+                            },
+                            onBack = { navController.popBackStack() }
+                        )
                     }
                 }
             }
