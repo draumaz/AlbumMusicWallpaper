@@ -120,6 +120,20 @@ class MusicNotificationListenerService : NotificationListenerService() {
         }
     }
 
+    override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        val packageName = sbn.packageName
+        if (packageName !in supportedPackages) return
+
+        Log.d("MusicNotification", "onNotificationRemoved: $packageName")
+        val app = application as App
+        lastProcessedTrackKey = null
+        lastSavedContent = null
+        resolutionJob?.cancel()
+        serviceScope.launch {
+            applyDefaultWallpaper(app)
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         resolutionJob?.cancel()

@@ -90,6 +90,18 @@ class WallpaperStateStore(
     suspend fun saveDefaultWallpaper(path: String) {
         context.dataStore.edit { prefs ->
             prefs[Keys.DEFAULT_WALLPAPER_PATH] = path
+            
+            // Se não houver nada tocando (ou se já estivermos no modo estático sem track), atualizamos o estado atual
+            val currentType = prefs[Keys.CONTENT_TYPE] ?: WallpaperContentType.NONE.name
+            val currentTrack = prefs[Keys.TRACK_TITLE]
+            
+            if (currentType == WallpaperContentType.NONE.name || (currentType == WallpaperContentType.STATIC.name && currentTrack.isNullOrBlank())) {
+                prefs[Keys.CONTENT_TYPE] = WallpaperContentType.STATIC.name
+                prefs[Keys.STATIC_IMAGE_PATH] = path
+                prefs[Keys.UPDATED_AT] = System.currentTimeMillis()
+                prefs[Keys.TRACK_TITLE] = ""
+                prefs[Keys.TRACK_ARTIST] = ""
+            }
         }
     }
 

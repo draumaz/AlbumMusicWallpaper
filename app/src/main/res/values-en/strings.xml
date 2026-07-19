@@ -9,7 +9,7 @@
     <string name="btn_choose_wallpaper">3. Set as wallpaper</string>
     <string name="btn_select_music_apps">4. Select music apps</string>
     <string name="toast_wallpaper_saved">Default wallpaper saved!</string>
-    <string name="live_status_header">Status</string>
+    <string name="live_status_header">Now Playing</string>
     <string name="track_label">Track: %1$s</string>
     <string name="artist_label">Artist: %1$s</string>
     <string name="album_label">Album: %1$s</string>

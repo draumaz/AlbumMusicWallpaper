@@ -65,7 +65,7 @@ class AnimatedWallpaperService : WallpaperService() {
             observeContentJob = engineScope.launch {
                 // Merge DataStore for persistence/startup and live flow for instant skip triggers
                 merge(app.wallpaperStateStore.contentFlow, app.liveWallpaperFlow).collectLatest { content ->
-                    if (content.updatedAt > (lastContent?.updatedAt ?: 0L)) {
+                    if (content.updatedAt >= (lastContent?.updatedAt ?: 0L)) {
                         lastContent = content
                         renderContent(content)
                     }
@@ -89,6 +89,10 @@ class AnimatedWallpaperService : WallpaperService() {
             observeDefaultJob = engineScope.launch {
                 app.wallpaperStateStore.defaultWallpaperFlow.collectLatest { path ->
                     defaultWallpaperPath = path
+                    val content = lastContent
+                    if (content == null || content.contentType == WallpaperContentType.NONE || (content.contentType == WallpaperContentType.STATIC && content.trackTitle.isNullOrBlank())) {
+                        renderContent(content ?: WallpaperContent(contentType = WallpaperContentType.NONE))
+                    }
                 }
             }
         }
@@ -240,14 +244,26 @@ class AnimatedWallpaperService : WallpaperService() {
                 }
 
                 WallpaperContentType.NONE -> {
+                    val defaultPath = defaultWallpaperPath
+                    if (defaultPath != null && File(defaultPath).exists()) {
+                        renderContent(WallpaperContent(
+                            contentType = WallpaperContentType.STATIC,
+                            staticImagePath = defaultPath,
+                            updatedAt = content.updatedAt
+                        ))
+                        return
+                    }
+
                     transitionJob?.cancel()
                     transitionJob = engineScope.launch {
                         pendingBitmap = null
                         pendingPath = null
                         if (currentBitmap == null) {
                              val canvas = holder.lockHardwareCanvas()
-                             canvas.drawColor(android.graphics.Color.BLACK)
-                             holder.unlockCanvasAndPost(canvas)
+                             if (canvas != null) {
+                                 canvas.drawColor(android.graphics.Color.BLACK)
+                                 holder.unlockCanvasAndPost(canvas)
+                             }
                              return@launch
                         }
                         withContext(Dispatchers.Default) {

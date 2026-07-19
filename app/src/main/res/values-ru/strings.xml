@@ -9,7 +9,7 @@
     <string name="btn_choose_wallpaper">3. Установить как обои</string>
     <string name="btn_select_music_apps">4. Выбрать музыкальные приложения</string>
     <string name="toast_wallpaper_saved">Фото по умолчанию сохранено!</string>
-    <string name="live_status_header">Статус</string>
+    <string name="live_status_header">В эфире</string>
     <string name="track_label">Трек: %1$s</string>
     <string name="artist_label">Исполнитель: %1$s</string>
     <string name="album_label">Альбом: %1$s</string>

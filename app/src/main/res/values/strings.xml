@@ -9,7 +9,7 @@
     <string name="btn_choose_wallpaper">3. Definir como papel de parede</string>
     <string name="btn_select_music_apps">4. Selecionar apps de música</string>
     <string name="toast_wallpaper_saved">Papel de parede padrão salvo!</string>
-    <string name="live_status_header">STATUS AO VIVO</string>
+    <string name="live_status_header">A tocar</string>
     <string name="track_label">Faixa: %1$s</string>
     <string name="artist_label">Artista: %1$s</string>
     <string name="album_label">Álbum: %1$s</string>

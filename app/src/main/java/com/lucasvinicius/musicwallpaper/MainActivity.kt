@@ -65,8 +65,12 @@ class MainActivity : ComponentActivity() {
             lifecycleScope.launch {
                 val savedPath = withContext(Dispatchers.IO) {
                     try {
+                        // Cleanup old default wallpapers
+                        filesDir.listFiles { _, name -> name.startsWith("default_wallpaper_") }?.forEach { it.delete() }
+
                         val inputStream = contentResolver.openInputStream(uri)
-                        val file = File(filesDir, "default_wallpaper.jpg")
+                        val timestamp = System.currentTimeMillis()
+                        val file = File(filesDir, "default_wallpaper_$timestamp.jpg")
                         val outputStream = FileOutputStream(file)
                         inputStream?.copyTo(outputStream)
                         inputStream?.close()
@@ -179,6 +183,11 @@ class MainActivity : ComponentActivity() {
                     }
                 )
 
+                // Live Status Section
+                SectionHeader(stringResource(R.string.live_status_header))
+
+                LiveStatusCard(wallpaperContent)
+
                 // Actions Section
                 SectionHeader(stringResource(R.string.actions_section_title))
 
@@ -225,11 +234,6 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 )
-
-                // Live Status Section
-                SectionHeader(stringResource(R.string.live_status_header))
-                
-                LiveStatusCard(wallpaperContent)
                 
                 Spacer(modifier = Modifier.height(32.dp))
             }
@@ -264,16 +268,16 @@ fun StatusCard(enabled: Boolean, onActionClick: () -> Unit) {
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            Text(
-                text = stringResource(if (enabled) R.string.notification_access_allowed else R.string.notification_access_blocked),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold
-            )
+            //Text(
+            //    text = stringResource(if (enabled) R.string.notification_access_allowed else R.string.notification_access_blocked),
+            //    style = MaterialTheme.typography.bodyLarge,
+            //    fontWeight = FontWeight.Bold
+            //)
             if (!enabled) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = onActionClick,
-                    modifier = Modifier.align(Alignment.End)
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {
                     Text(stringResource(R.string.btn_notification_access).substringAfter(". "))
                 }
