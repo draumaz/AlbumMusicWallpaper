@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Music Wallpaper</string>
-    <string name="notification_access_allowed">✅ Acesso às notificações: PERMITIDO</string>
-    <string name="notification_access_blocked">❌ Acesso às notificações: BLOQUEADO</string>
+    <string name="notification_access_allowed">✅ Acesso às notificações</string>
+    <string name="notification_access_blocked">❌ Acesso às notificações</string>
     <string name="dim_level_label">Escurecimento da Capa Estática: %1$d%%</string>
     <string name="blur_level_label">Desfoque da Capa Estática: %1$d%%</string>
     <string name="btn_notification_access">1. Conceder acesso às notificações</string>

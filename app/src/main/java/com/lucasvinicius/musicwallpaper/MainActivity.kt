@@ -259,22 +259,22 @@ fun StatusCard(enabled: Boolean, onActionClick: () -> Unit) {
             containerColor = if (enabled) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(16.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(if (enabled) R.string.notification_access_allowed else R.string.notification_access_blocked),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            Text(
+                text = stringResource(if (enabled) R.string.notification_access_allowed else R.string.notification_access_blocked),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold
+            )
             if (!enabled) {
-                Button(onClick = onActionClick) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = onActionClick,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
                     Text(stringResource(R.string.btn_notification_access).substringAfter(". "))
                 }
             }

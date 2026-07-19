@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Music Wallpaper</string>
-    <string name="notification_access_allowed">✅ Доступ к уведомлениям: РАЗРЕШЕН</string>
-    <string name="notification_access_blocked">❌ Доступ к уведомлениям: ЗАБЛОКИРОВАН</string>
+    <string name="notification_access_allowed">✅ Доступ к уведомлениям</string>
+    <string name="notification_access_blocked">❌ Доступ к уведомлениям</string>
     <string name="dim_level_label">Затемнение обложки: %1$d%%</string>
     <string name="blur_level_label">Размытие обложки: %1$d%%</string>
     <string name="btn_notification_access">1. Предоставить доступ к уведомлениям</string>

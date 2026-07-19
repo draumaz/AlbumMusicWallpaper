@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Music Wallpaper</string>
-    <string name="notification_access_allowed">✅ Notification Access: ALLOWED</string>
-    <string name="notification_access_blocked">❌ Notification Access: BLOCKED</string>
+    <string name="notification_access_allowed">✅ Notification Access</string>
+    <string name="notification_access_blocked">❌ Notification Access</string>
     <string name="dim_level_label">Static Cover Dimming: %1$d%%</string>
     <string name="blur_level_label">Static Cover Blur: %1$d%%</string>
     <string name="btn_notification_access">1. Grant notification access</string>
