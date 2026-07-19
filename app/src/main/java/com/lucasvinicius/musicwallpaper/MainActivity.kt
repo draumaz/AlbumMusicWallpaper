@@ -14,19 +14,30 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Notifications
@@ -184,56 +195,44 @@ class MainActivity : ComponentActivity() {
                 )
 
                 // Live Status Section
-                SectionHeader(stringResource(R.string.live_status_header))
-
-                LiveStatusCard(wallpaperContent)
+                CollapsibleSection(title = stringResource(R.string.live_status_header)) {
+                    LiveStatusCard(wallpaperContent)
+                }
 
                 // Actions Section
-                SectionHeader(stringResource(R.string.actions_section_title))
-
-                ActionCard(
-                    text = stringResource(R.string.btn_choose_default_photo),
-                    icon = Icons.Default.Image,
-                    onClick = onPickImage
-                )
-
-                ActionCard(
-                    text = stringResource(R.string.btn_choose_wallpaper),
-                    icon = Icons.Default.Wallpaper,
-                    onClick = {
-                        val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).apply {
-                            putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, ComponentName(this@MainActivity, AnimatedWallpaperService::class.java))
-                        }
-                        startActivity(intent)
-                    }
-                )
-
-                ActionCard(
-                    text = stringResource(R.string.btn_select_music_apps),
-                    icon = Icons.Default.MusicNote,
-                    onClick = onNavigateToAppSelection
-                )
+                CollapsibleSection(title = stringResource(R.string.actions_section_title)) {
+                    ActionsCard(
+                        onPickImage = onPickImage,
+                        onSetWallpaper = {
+                            val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).apply {
+                                putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, ComponentName(this@MainActivity, AnimatedWallpaperService::class.java))
+                            }
+                            startActivity(intent)
+                        },
+                        onNavigateToAppSelection = onNavigateToAppSelection
+                    )
+                }
 
                 // Appearance Section
-                SectionHeader(stringResource(R.string.dimming_section_title))
-                
-                DimmingCard(
-                    dimLevel = dimLevel,
-                    onDimChange = { newValue ->
-                        lifecycleScope.launch {
-                            app.wallpaperStateStore.saveDimLevel(newValue.toInt())
+                CollapsibleSection(
+                    title = stringResource(R.string.dimming_section_title),
+                    initialExpanded = false
+                ) {
+                    AppearanceCard(
+                        dimLevel = dimLevel,
+                        onDimChange = { newValue ->
+                            lifecycleScope.launch {
+                                app.wallpaperStateStore.saveDimLevel(newValue.toInt())
+                            }
+                        },
+                        blurLevel = blurLevel,
+                        onBlurChange = { newValue ->
+                            lifecycleScope.launch {
+                                app.wallpaperStateStore.saveBlurLevel(newValue.toInt())
+                            }
                         }
-                    }
-                )
-
-                BlurCard(
-                    blurLevel = blurLevel,
-                    onBlurChange = { newValue ->
-                        lifecycleScope.launch {
-                            app.wallpaperStateStore.saveBlurLevel(newValue.toInt())
-                        }
-                    }
-                )
+                    )
+                }
                 
                 Spacer(modifier = Modifier.height(32.dp))
             }
@@ -254,6 +253,44 @@ fun SectionHeader(title: String) {
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(top = 8.dp)
     )
+}
+
+@Composable
+fun CollapsibleSection(
+    title: String,
+    initialExpanded: Boolean = true,
+    content: @Composable () -> Unit
+) {
+    var expanded by remember { mutableStateOf(initialExpanded) }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
+            content()
+        }
+    }
 }
 
 @Composable
@@ -286,57 +323,92 @@ fun StatusCard(enabled: Boolean, onActionClick: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ActionCard(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
-    OutlinedCard(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
+fun ActionsCard(
+    onPickImage: () -> Unit,
+    onSetWallpaper: () -> Unit,
+    onNavigateToAppSelection: () -> Unit
+) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        FlowRow(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(12.dp)
                 .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(text.substringAfter(". "), style = MaterialTheme.typography.bodyLarge)
-        }
-    }
-}
-
-@Composable
-fun DimmingCard(dimLevel: Int, onDimChange: (Float) -> Unit) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.dim_level_label, dimLevel),
-                style = MaterialTheme.typography.bodyLarge
+            AssistChip(
+                onClick = onPickImage,
+                label = { Text(stringResource(R.string.chip_background)) },
+                leadingIcon = { Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(18.dp)) }
             )
-            Slider(
-                value = dimLevel.toFloat(),
-                onValueChange = onDimChange,
-                valueRange = 0f..100f,
-                steps = 100
+            AssistChip(
+                onClick = onSetWallpaper,
+                label = { Text(stringResource(R.string.chip_wallpaper)) },
+                leadingIcon = { Icon(Icons.Default.Wallpaper, contentDescription = null, modifier = Modifier.size(18.dp)) }
+            )
+            AssistChip(
+                onClick = onNavigateToAppSelection,
+                label = { Text(stringResource(R.string.chip_apps)) },
+                leadingIcon = { Icon(Icons.Default.MusicNote, contentDescription = null, modifier = Modifier.size(18.dp)) }
             )
         }
     }
 }
 
 @Composable
-fun BlurCard(blurLevel: Int, onBlurChange: (Float) -> Unit) {
+fun AppearanceCard(
+    dimLevel: Int,
+    onDimChange: (Float) -> Unit,
+    blurLevel: Int,
+    onBlurChange: (Float) -> Unit
+) {
+    var selectedOption by remember { mutableIntStateOf(0) } // 0: Dim, 1: Blur
+
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(R.string.blur_level_label, blurLevel),
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Slider(
-                value = blurLevel.toFloat(),
-                onValueChange = onBlurChange,
-                valueRange = 0f..100f,
-                steps = 100
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = selectedOption == 0,
+                    onClick = { selectedOption = 0 },
+                    label = { Text(stringResource(R.string.chip_dimming)) }
+                )
+                FilterChip(
+                    selected = selectedOption == 1,
+                    onClick = { selectedOption = 1 },
+                    label = { Text(stringResource(R.string.chip_blur)) }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (selectedOption == 0) {
+                Text(
+                    text = stringResource(R.string.dim_level_label, dimLevel),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Slider(
+                    value = dimLevel.toFloat(),
+                    onValueChange = onDimChange,
+                    valueRange = 0f..100f,
+                    steps = 100
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.blur_level_label, blurLevel),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Slider(
+                    value = blurLevel.toFloat(),
+                    onValueChange = onBlurChange,
+                    valueRange = 0f..100f,
+                    steps = 100
+                )
+            }
         }
     }
 }
@@ -381,13 +453,15 @@ fun SettingsPreview() {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 StatusCard(enabled = true, onActionClick = {})
-                SectionHeader("Ações")
-                ActionCard(text = "Escolher papel de parede", icon = Icons.Default.Wallpaper, onClick = {})
-                SectionHeader("Aparência")
-                DimmingCard(dimLevel = 30, onDimChange = {})
-                BlurCard(blurLevel = 10, onBlurChange = {})
-                SectionHeader("Status")
-                LiveStatusCard(null)
+                CollapsibleSection(title = "Ações") {
+                    ActionsCard(onPickImage = {}, onSetWallpaper = {}, onNavigateToAppSelection = {})
+                }
+                CollapsibleSection(title = "Aparência", initialExpanded = false) {
+                    AppearanceCard(dimLevel = 30, onDimChange = {}, blurLevel = 10, onBlurChange = {})
+                }
+                CollapsibleSection(title = "Status") {
+                    LiveStatusCard(null)
+                }
             }
         }
     }
