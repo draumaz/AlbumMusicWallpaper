@@ -26,9 +26,20 @@ class MusicNotificationListenerService : NotificationListenerService() {
     private var lastSavedContent: WallpaperContent? = null
     private var lastUpdateTime: Long = 0L
 
+    private var supportedPackages: Set<String> = SupportedMusicApps.packages
+
+    override fun onCreate() {
+        super.onCreate()
+        serviceScope.launch {
+            (application as App).wallpaperStateStore.supportedPackagesFlow.collect {
+                supportedPackages = it
+            }
+        }
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         val packageName = sbn.packageName
-        if (packageName !in SupportedMusicApps.packages) return
+        if (packageName !in supportedPackages) return
 
         val notification = sbn.notification ?: return
         val trackInfo = parser.parse(notification, packageName) ?: return

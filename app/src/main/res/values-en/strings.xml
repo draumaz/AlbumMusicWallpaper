@@ -7,6 +7,7 @@
     <string name="btn_notification_access">1. Grant notification access</string>
     <string name="btn_choose_default_photo">2. Set background (for when nothing\'s playing)</string>
     <string name="btn_choose_wallpaper">3. Set as wallpaper</string>
+    <string name="btn_select_music_apps">4. Select music apps</string>
     <string name="toast_wallpaper_saved">Default wallpaper saved!</string>
     <string name="live_status_header">Status</string>
     <string name="track_label">Track: %1$s</string>
@@ -20,4 +21,7 @@
     <string name="actions_section_title">Actions</string>
     <string name="permissions_section_title">Permissions</string>
     <string name="help_description">Open project GitHub</string>
+    <string name="app_selection_title">Music Apps</string>
+    <string name="search_apps_hint">Search apps…</string>
+    <string name="no_apps_found">No apps found</string>
 </resources>

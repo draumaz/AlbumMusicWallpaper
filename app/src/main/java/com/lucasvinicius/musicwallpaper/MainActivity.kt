@@ -11,6 +11,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,9 +21,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Wallpaper
@@ -43,6 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.lucasvinicius.musicwallpaper.data.model.WallpaperContent
 import com.lucasvinicius.musicwallpaper.notification.MusicNotificationListenerService
+import com.lucasvinicius.musicwallpaper.ui.AppSelectionScreen
 import com.lucasvinicius.musicwallpaper.ui.theme.MusicWallpaperTheme
 import com.lucasvinicius.musicwallpaper.wallpaper.AnimatedWallpaperService
 import kotlinx.coroutines.Dispatchers
@@ -88,108 +93,143 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MusicWallpaperTheme {
-                var isNotificationEnabled by remember { mutableStateOf(checkNotificationAccess()) }
-                val wallpaperContent by app.wallpaperStateStore.contentFlow.collectAsStateWithLifecycle(initialValue = null)
-                val dimLevel by app.wallpaperStateStore.dimLevelFlow.collectAsStateWithLifecycle(initialValue = 30)
-                val blurLevel by app.wallpaperStateStore.blurLevelFlow.collectAsStateWithLifecycle(initialValue = 0)
+                var currentScreen by remember { mutableStateOf("main") }
 
-                val lifecycleOwner = LocalLifecycleOwner.current
-                DisposableEffect(lifecycleOwner) {
-                    val observer = LifecycleEventObserver { _, event ->
-                        if (event == Lifecycle.Event.ON_RESUME) {
-                            isNotificationEnabled = checkNotificationAccess()
+                Crossfade(targetState = currentScreen) { screen ->
+                    when (screen) {
+                        "main" -> MainScreen(
+                            onNavigateToAppSelection = { currentScreen = "app_selection" },
+                            onPickImage = { pickImageLauncher.launch("image/*") }
+                        )
+                        "app_selection" -> {
+                            val supportedPackages by app.wallpaperStateStore.supportedPackagesFlow.collectAsStateWithLifecycle(initialValue = emptySet())
+                            AppSelectionScreen(
+                                selectedPackages = supportedPackages,
+                                onPackagesChanged = { newSet ->
+                                    lifecycleScope.launch {
+                                        app.wallpaperStateStore.saveSupportedPackages(newSet)
+                                    }
+                                },
+                                onBack = { currentScreen = "main" }
+                            )
                         }
                     }
-                    lifecycleOwner.lifecycle.addObserver(observer)
-                    onDispose {
-                        lifecycleOwner.lifecycle.removeObserver(observer)
-                    }
                 }
+            }
+        }
+    }
 
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            title = { Text(stringResource(R.string.app_name)) },
-                            actions = {
-                                IconButton(onClick = {
-                                    val intent = Intent(Intent.ACTION_VIEW, "https://github.com/draumaz/AlbumMusicWallpaper".toUri())
-                                    startActivity(intent)
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.HelpOutline,
-                                        contentDescription = stringResource(R.string.help_description)
-                                    )
-                                }
-                            }
-                        )
-                    }
-                ) { innerPadding ->
-                    Column(
-                        modifier = Modifier
-                            .padding(innerPadding)
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        SectionHeader(stringResource(R.string.permissions_section_title))
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun MainScreen(onNavigateToAppSelection: () -> Unit, onPickImage: () -> Unit) {
+        val app = application as App
+        var isNotificationEnabled by remember { mutableStateOf(checkNotificationAccess()) }
+        val wallpaperContent by app.wallpaperStateStore.contentFlow.collectAsStateWithLifecycle(initialValue = null)
+        val dimLevel by app.wallpaperStateStore.dimLevelFlow.collectAsStateWithLifecycle(initialValue = 30)
+        val blurLevel by app.wallpaperStateStore.blurLevelFlow.collectAsStateWithLifecycle(initialValue = 0)
 
-                        // Notification Status Card
-                        StatusCard(
-                            enabled = isNotificationEnabled,
-                            onActionClick = {
-                                startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-                            }
-                        )
-
-                        // Actions Section
-                        SectionHeader(stringResource(R.string.actions_section_title))
-
-                        ActionCard(
-                            text = stringResource(R.string.btn_choose_default_photo),
-                            icon = Icons.Default.Image,
-                            onClick = { pickImageLauncher.launch("image/*") }
-                        )
-
-                        ActionCard(
-                            text = stringResource(R.string.btn_choose_wallpaper),
-                            icon = Icons.Default.Wallpaper,
-                            onClick = {
-                                val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).apply {
-                                    putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, ComponentName(this@MainActivity, AnimatedWallpaperService::class.java))
-                                }
-                                startActivity(intent)
-                            }
-                        )
-
-                        // Appearance Section
-                        SectionHeader(stringResource(R.string.dimming_section_title))
-                        
-                        DimmingCard(
-                            dimLevel = dimLevel,
-                            onDimChange = { newValue ->
-                                lifecycleScope.launch {
-                                    app.wallpaperStateStore.saveDimLevel(newValue.toInt())
-                                }
-                            }
-                        )
-
-                        BlurCard(
-                            blurLevel = blurLevel,
-                            onBlurChange = { newValue ->
-                                lifecycleScope.launch {
-                                    app.wallpaperStateStore.saveBlurLevel(newValue.toInt())
-                                }
-                            }
-                        )
-
-                        // Live Status Section
-                        SectionHeader(stringResource(R.string.live_status_header))
-                        
-                        LiveStatusCard(wallpaperContent)
-                        
-                        Spacer(modifier = Modifier.height(32.dp))
-                    }
+        val lifecycleOwner = LocalLifecycleOwner.current
+        DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    isNotificationEnabled = checkNotificationAccess()
                 }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose {
+                lifecycleOwner.lifecycle.removeObserver(observer)
+            }
+        }
+
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.app_name)) },
+                    actions = {
+                        IconButton(onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, "https://github.com/draumaz/AlbumMusicWallpaper".toUri())
+                            startActivity(intent)
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                                contentDescription = stringResource(R.string.help_description)
+                            )
+                        }
+                    }
+                )
+            }
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                SectionHeader(stringResource(R.string.permissions_section_title))
+
+                // Notification Status Card
+                StatusCard(
+                    enabled = isNotificationEnabled,
+                    onActionClick = {
+                        startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                    }
+                )
+
+                // Actions Section
+                SectionHeader(stringResource(R.string.actions_section_title))
+
+                ActionCard(
+                    text = stringResource(R.string.btn_choose_default_photo),
+                    icon = Icons.Default.Image,
+                    onClick = onPickImage
+                )
+
+                ActionCard(
+                    text = stringResource(R.string.btn_choose_wallpaper),
+                    icon = Icons.Default.Wallpaper,
+                    onClick = {
+                        val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).apply {
+                            putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, ComponentName(this@MainActivity, AnimatedWallpaperService::class.java))
+                        }
+                        startActivity(intent)
+                    }
+                )
+
+                ActionCard(
+                    text = stringResource(R.string.btn_select_music_apps),
+                    icon = Icons.Default.MusicNote,
+                    onClick = onNavigateToAppSelection
+                )
+
+                // Appearance Section
+                SectionHeader(stringResource(R.string.dimming_section_title))
+                
+                DimmingCard(
+                    dimLevel = dimLevel,
+                    onDimChange = { newValue ->
+                        lifecycleScope.launch {
+                            app.wallpaperStateStore.saveDimLevel(newValue.toInt())
+                        }
+                    }
+                )
+
+                BlurCard(
+                    blurLevel = blurLevel,
+                    onBlurChange = { newValue ->
+                        lifecycleScope.launch {
+                            app.wallpaperStateStore.saveBlurLevel(newValue.toInt())
+                        }
+                    }
+                )
+
+                // Live Status Section
+                SectionHeader(stringResource(R.string.live_status_header))
+                
+                LiveStatusCard(wallpaperContent)
+                
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }

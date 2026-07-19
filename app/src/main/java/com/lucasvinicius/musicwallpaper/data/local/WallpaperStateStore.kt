@@ -34,6 +34,8 @@ class WallpaperStateStore(
 
         // CHAVE PARA O NÍVEL DE BLUR (0 a 100)
         val BLUR_LEVEL = intPreferencesKey("blur_level")
+
+        val SUPPORTED_PACKAGES = androidx.datastore.preferences.core.stringSetPreferencesKey("supported_packages")
     }
 
     val contentFlow: Flow<WallpaperContent> = context.dataStore.data.map { prefs ->
@@ -67,6 +69,10 @@ class WallpaperStateStore(
         prefs[Keys.BLUR_LEVEL] ?: 0
     }
 
+    val supportedPackagesFlow: Flow<Set<String>> = context.dataStore.data.map { prefs ->
+        prefs[Keys.SUPPORTED_PACKAGES] ?: com.lucasvinicius.musicwallpaper.notification.SupportedMusicApps.packages
+    }
+
     suspend fun save(content: WallpaperContent) {
         context.dataStore.edit { prefs ->
             prefs[Keys.TRACK_TITLE] = content.trackTitle.orEmpty()
@@ -98,6 +104,12 @@ class WallpaperStateStore(
     suspend fun saveBlurLevel(level: Int) {
         context.dataStore.edit { prefs ->
             prefs[Keys.BLUR_LEVEL] = level
+        }
+    }
+
+    suspend fun saveSupportedPackages(packages: Set<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.SUPPORTED_PACKAGES] = packages
         }
     }
 }
