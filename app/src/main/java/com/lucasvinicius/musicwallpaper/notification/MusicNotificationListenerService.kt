@@ -129,7 +129,7 @@ class MusicNotificationListenerService : NotificationListenerService() {
     private suspend fun applyDefaultWallpaper(app: App) {
         val defaultImagePath = app.wallpaperStateStore.defaultWallpaperFlow.first()
         val content = if (defaultImagePath != null) {
-            WallpaperContent(trackTitle = "Música Pausada", contentType = WallpaperContentType.STATIC, staticImagePath = defaultImagePath, updatedAt = System.currentTimeMillis())
+            WallpaperContent(trackTitle = "", contentType = WallpaperContentType.STATIC, staticImagePath = defaultImagePath, updatedAt = System.currentTimeMillis())
         } else {
             WallpaperContent(contentType = WallpaperContentType.NONE, updatedAt = System.currentTimeMillis())
         }
